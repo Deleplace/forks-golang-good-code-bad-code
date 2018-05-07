@@ -3,25 +3,16 @@ package good
 import (
 	"bytes"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Check whether a byte slice starts with another byte slice
 func startWith(in, test []byte) bool {
-	if len(test) > len(in) {
-		return false
-	}
-
-	i := 0
-	for range test {
-		if test[i] != in[i] {
-			return false
-		}
-		i++
-	}
-
-	return true
+	// bytes.HasPrefix is exactly what we want,
+	// and "possibly" benefits from ASM optimization.
+	return bytes.HasPrefix(in, test)
 }
 
 // Parse a line by returning the header (token name) and the value. Example: -COMMENT TEST must returns COMMENT and TEST (in byte slices)
