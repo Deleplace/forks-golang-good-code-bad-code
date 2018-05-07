@@ -46,7 +46,7 @@ var (
 	bytesComment     = []byte("//")
 	bytesDash        = []byte("-")
 
-	regexpSubfield, _ = regexp.Compile(patternSubfield)
+	regexpSubfield = regexp.MustCompile(patternSubfield)
 
 	// Map containing the mapping function given a specific token name
 	factory = map[string]func(string, []byte) interface{}{
