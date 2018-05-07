@@ -129,21 +129,11 @@ func preprocess(in []byte) ([][]byte, error) {
 
 // Processing of an ADEXP message. Returns a Message structure and an eventual error in case of a processing error.
 func process(in [][]byte) (Message, error) {
-	nLines := len(in)
-
-	// Create a channel for goroutine responses
-	ch := make(chan interface{}, nLines)
-
-	// Split each line in a goroutine
-	for _, line := range in {
-		go mapLine(line, ch)
-	}
-
 	msg := Message{}
 
 	// Gather the goroutine results
-	for range in {
-		data := <-ch
+	for _, line := range in {
+		data := mapLine(line)
 
 		// A mapper function can return a nil value (a line is potentially invalid, a comment etc.). In that case we simply discard the line.
 		if data == nil {
@@ -219,31 +209,28 @@ func process(in [][]byte) (Message, error) {
 	return msg, nil
 }
 
-// Process a line and returns a token to the channel
-func mapLine(in []byte, ch chan interface{}) {
+// Process a line and returns a token
+func mapLine(in []byte) interface{} {
 	// Filter empty lines and comment lines
 	if len(in) == 0 || startWith(in, bytesComment) {
-		ch <- nil
-		return
+		return nil
 	}
 
 	token, value := parseLine(in)
 	if token == nil {
-		ch <- nil
 		log.Warnf("Token name is empty on line %v", string(in))
-		return
+		return nil
 	}
 
 	sToken := string(token)
 
 	// Checks in the factory map if the token has been configured
 	if f, contains := factory[sToken]; contains {
-		ch <- f(sToken, value)
-		return
+		return f(sToken, value)
 	}
 
 	log.Warnf("Token %v is not managed by the parser", string(in))
-	ch <- nil
+	return nil
 }
 
 // Parse a simple token and returns a simpleToken structure
