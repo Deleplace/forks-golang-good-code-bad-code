@@ -107,16 +107,16 @@ func preprocess(in []byte) ([][]byte, error) {
 		} else if startWith(line, bytesBegin) {
 			result = append(result, currentLine)
 
-			trimed := bytes.Trim(line, " ")
+			trimed := trim(line)
 			currentLine = append(bytesDash, trimed[len(bytesBegin)+1:]...)
 		} else if startWith(line, bytesDash) {
 			result = append(result, currentLine)
 
-			currentLine = bytes.Trim(line, " ")
+			currentLine = trim(line)
 		} else if startWith(line, bytesEmpty) {
-			currentLine = append(append(currentLine, bytesEmpty...), bytes.Trim(line, " ")...)
+			currentLine = append(append(currentLine, bytesEmpty...), trim(line)...)
 		} else {
-			currentLine = append(append(currentLine, bytesEmpty...), bytes.Trim(line, " ")...)
+			currentLine = append(append(currentLine, bytesEmpty...), trim(line)...)
 		}
 	}
 
@@ -260,11 +260,26 @@ func parseComplexToken(token string, value []byte) interface{} {
 			currentMap = make(map[string]string)
 		}
 
-		currentMap[string(h)] = string(bytes.Trim(l, " "))
+		currentMap[string(h)] = string(trim(l))
 	}
 
 	// Append the latest map
 	v = append(v, currentMap)
 
 	return complexToken{token, v}
+}
+
+// This custom loop is faster than the generic-purpose bytes.Trim .
+// It expects 1 char == 1 byte (no multi-byte UTF-8 runes)
+func trim(s []byte) []byte {
+	const space = ' '
+	n := len(s)
+	low, high := 0, n
+	for low < n && s[low] == space {
+		low++
+	}
+	for high > low && s[high-1] == space {
+		high--
+	}
+	return s[low:high]
 }
