@@ -21,7 +21,7 @@ func parseLine(in []byte) ([]byte, []byte) {
 		return nil, nil
 	}
 
-	i := bytes.Index(in, bytesEmpty)
+	i := bytes.IndexByte(in, ' ')
 
 	if i == -1 {
 		return in[1:], nil
