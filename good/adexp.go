@@ -240,7 +240,7 @@ func parseSimpleToken(token string, value []byte) interface{} {
 
 // Parse a complex token and returns a commplexToken structure
 func parseComplexToken(token string, value []byte) interface{} {
-	if value == nil {
+	if len(value) == 0 {
 		log.Warnf("Empty value")
 		return complexToken{token, nil}
 	}
@@ -249,7 +249,7 @@ func parseComplexToken(token string, value []byte) interface{} {
 	currentMap := make(map[string]string)
 
 	// Find all subfields
-	matches := regexpSubfield.FindAll(value, -1)
+	matches := findSubfields(value)
 
 	// Iterate over each subfields to enrich the returned data
 	for _, sub := range matches {
@@ -267,6 +267,30 @@ func parseComplexToken(token string, value []byte) interface{} {
 	v = append(v, currentMap)
 
 	return complexToken{token, v}
+}
+
+// Extract subfields from a line.
+// E.g.
+//       "-ESTDATA -PTID XETBO -ETO 170302032300 -FL F390"
+//    -> ["-ESTDATA ", "-PTID XETBO ", "-ETO 170302032300 ", "-FL F390"]
+// This is efficient because each element is a subslice of the original line.
+func findSubfields(value []byte) (subfields [][]byte) {
+	nSubs := bytes.Count(value, bytesDash)
+	subfields = make([][]byte, 0, nSubs)
+	i := 0
+	for j, c := range value {
+		if c == '-' && j > 0 {
+			subfields = append(subfields, value[i:j])
+			i = j
+		}
+	}
+	if value[i] == '-' {
+		subfields = append(subfields, value[i:])
+	}
+	if len(subfields) != nSubs {
+		panic("Bug in custom Subfield split")
+	}
+	return subfields
 }
 
 // This custom loop is faster than the generic-purpose bytes.Trim .
