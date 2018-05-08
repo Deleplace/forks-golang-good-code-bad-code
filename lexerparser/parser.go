@@ -4,15 +4,6 @@ import (
 	"bytes"
 )
 
-func chanParse(ch <-chan lexeme) (*Message, error) {
-	m := &Message{}
-
-	for range ch {
-	}
-
-	return m, nil
-}
-
 func parse(words []lexeme) (*Message, error) {
 	m := &Message{}
 

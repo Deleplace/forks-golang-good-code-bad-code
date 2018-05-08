@@ -1,50 +1,5 @@
 package parser
 
-func chanLex(src []byte) <-chan lexeme {
-	words := make(chan lexeme, 64)
-
-	go func() {
-		state := start
-		// commandType := noCommand
-		i := 0
-
-		for j := 0; ; j++ {
-			if j == len(src) {
-				if i != j {
-					words <- src[i:j]
-				}
-				close(words)
-				return
-			}
-			switch state {
-
-			case start:
-				switch src[j] {
-				case ' ', '\t', '\n':
-					// Ignore
-				default:
-					state = word
-				}
-				i = j
-
-			case word:
-				switch src[j] {
-				case ' ', '\t':
-					words <- src[i:j]
-					state = start
-				case '\n':
-					words <- src[i:j]
-					words <- newLine
-					state = start
-				default:
-					// Keeping reading the word
-				}
-			}
-		}
-	}()
-	return words
-}
-
 type lexeme []byte
 
 func (x lexeme) isNewline() bool {

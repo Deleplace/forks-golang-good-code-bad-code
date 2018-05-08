@@ -62,21 +62,6 @@ func TestParse(t *testing.T) {
 	assert.Equal(t, "???FPD.F15: N0410F300 ARLES UL153 PUNSA/N0410F300 UL153 VADEM/N0400F320 UN853 PENDU/N0400F330 UN853 IXILU/N0400F340 UN853 DIK/N0400F320 UY37 BATTY", m.Comment)
 
 }
-func BenchmarkChanParser(t *testing.B) {
-	b, err := ioutil.ReadFile("../resources/tests/adexp.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.ResetTimer()
-	for i := 0; i < t.N; i++ {
-		lexemes := chanLex(b)
-		_, err = chanParse(lexemes)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
 
 func BenchmarkParser(b *testing.B) {
 	raw, err := ioutil.ReadFile("../resources/tests/adexp.txt")
