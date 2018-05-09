@@ -102,18 +102,18 @@ func preprocess(in []byte) ([][]byte, error) {
 	var currentLine []byte
 
 	for _, line := range lines {
-		if startWith(line, bytesEnd) {
+		if bytes.HasPrefix(line, bytesEnd) {
 			// Nothing
-		} else if startWith(line, bytesBegin) {
+		} else if bytes.HasPrefix(line, bytesBegin) {
 			result = append(result, currentLine)
 
 			trimed := trim(line)
 			currentLine = append(bytesDash, trimed[len(bytesBegin)+1:]...)
-		} else if startWith(line, bytesDash) {
+		} else if bytes.HasPrefix(line, bytesDash) {
 			result = append(result, currentLine)
 
 			currentLine = trim(line)
-		} else if startWith(line, bytesEmpty) {
+		} else if bytes.HasPrefix(line, bytesEmpty) {
 			currentLine = append(append(currentLine, bytesEmpty...), trim(line)...)
 		} else {
 			currentLine = append(append(currentLine, bytesEmpty...), trim(line)...)
@@ -212,7 +212,7 @@ func process(in [][]byte) (Message, error) {
 // Process a line and returns a token
 func mapLine(in []byte) interface{} {
 	// Filter empty lines and comment lines
-	if len(in) == 0 || startWith(in, bytesComment) {
+	if len(in) == 0 || bytes.HasPrefix(in, bytesComment) {
 		return nil
 	}
 	if in[0] != '-' {
