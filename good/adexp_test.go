@@ -11,7 +11,8 @@ import (
 func TestParseAdexpMessage(t *testing.T) {
 	bytes, _ := ioutil.ReadFile("../resources/tests/adexp.txt")
 
-	m, _ := ParseAdexpMessage(bytes)
+	m, err := ParseAdexpMessage(bytes)
+	assert.Nil(t, err)
 
 	// Test upper level
 	assert.Equal(t, true, m.IsUpperLevel())
@@ -50,6 +51,37 @@ func TestParseAdexpMessage(t *testing.T) {
 	assert.Equal(t, "LSZH", m.RoutePoints[4].Ptid)
 	assert.Equal(t, 14, m.RoutePoints[4].FlightLevel)
 	assert.Equal(t, "170302052710", m.RoutePoints[4].Eto)
+}
+
+func TestFindSubfields(t *testing.T) {
+	line := []byte("-ESTDATA -PTID XETBO -ETO 170302032300 -FL F390")
+	subfields := findSubfields(line)
+	assert.Equal(t, len(subfields), 4)
+	assert.Equal(t, string(subfields[0]), "ESTDATA ")
+	assert.Equal(t, string(subfields[1]), "PTID XETBO ")
+	assert.Equal(t, string(subfields[2]), "ETO 170302032300 ")
+	assert.Equal(t, string(subfields[3]), "FL F390")
+}
+
+func TestParseLine(t *testing.T) {
+	line := []byte("-ESTDATA -PTID XETBO -ETO 170302032300 -FL F390")
+	subfields := findSubfields(line)
+
+	h, l := parseLine(subfields[0])
+	assert.Equal(t, string(h), "ESTDATA")
+	assert.Equal(t, string(l), "")
+
+	h, l = parseLine(subfields[1])
+	assert.Equal(t, string(h), "PTID")
+	assert.Equal(t, string(l), "XETBO ")
+
+	h, l = parseLine(subfields[2])
+	assert.Equal(t, string(h), "ETO")
+	assert.Equal(t, string(l), "170302032300 ")
+
+	h, l = parseLine(subfields[3])
+	assert.Equal(t, string(h), "FL")
+	assert.Equal(t, string(l), "F390")
 }
 
 // Test ...

@@ -215,8 +215,12 @@ func mapLine(in []byte) interface{} {
 	if len(in) == 0 || startWith(in, bytesComment) {
 		return nil
 	}
+	if in[0] != '-' {
+		log.Warnf("Line doesn't start with a proper token: %q", string(in))
+		return nil
+	}
 
-	token, value := parseLine(in)
+	token, value := parseLine(in[1:])
 	if token == nil {
 		log.Warnf("Token name is empty on line %v", string(in))
 		return nil
@@ -269,26 +273,15 @@ func parseComplexToken(token string, value []byte) interface{} {
 	return complexToken{token, v}
 }
 
-// Extract subfields from a line.
+// Extract subfields from a line (with dash removed).
 // E.g.
 //       "-ESTDATA -PTID XETBO -ETO 170302032300 -FL F390"
-//    -> ["-ESTDATA ", "-PTID XETBO ", "-ETO 170302032300 ", "-FL F390"]
+//    -> ["ESTDATA ", "PTID XETBO ", "ETO 170302032300 ", "FL F390"]
 // This is efficient because each element is a subslice of the original line.
 func findSubfields(value []byte) (subfields [][]byte) {
-	nSubs := bytes.Count(value, bytesDash)
-	subfields = make([][]byte, 0, nSubs)
-	i := 0
-	for j, c := range value {
-		if c == '-' && j > 0 {
-			subfields = append(subfields, value[i:j])
-			i = j
-		}
-	}
-	if value[i] == '-' {
-		subfields = append(subfields, value[i:])
-	}
-	if len(subfields) != nSubs {
-		panic("Bug in custom Subfield split")
+	subfields = bytes.Split(value, bytesDash)
+	if len(subfields) > 0 && len(trim(subfields[0])) == 0 {
+		subfields = subfields[1:]
 	}
 	return subfields
 }
