@@ -136,7 +136,7 @@ func process(in [][]byte) (Message, error) {
 
 	// Split each line in a goroutine
 	for _, line := range in {
-		go mapLine(line, ch)
+		mapLine(line, ch)
 	}
 
 	msg := Message{}
