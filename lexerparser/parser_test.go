@@ -1,9 +1,12 @@
 package parser
 
 import (
+	"fmt"
 	"io/ioutil"
+	"sync"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,6 +66,12 @@ func TestParse(t *testing.T) {
 
 }
 
+// parseAdexpMessage == lex the bytes into lexemes + parse the lexemes
+func parseAdexpMessage(raw []byte) (*Message, error) {
+	lexemes := lex(raw)
+	return parse(lexemes)
+}
+
 func BenchmarkParser(b *testing.B) {
 	raw, err := ioutil.ReadFile("../resources/tests/adexp.txt")
 	if err != nil {
@@ -71,10 +80,76 @@ func BenchmarkParser(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		lexemes := lex(raw)
-		_, err = parse(lexemes)
+		_, err = parseAdexpMessage(raw)
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
+}
+
+// Performance test of an ADEXP message parsing
+func BenchmarkParseBatch(b *testing.B) {
+	log.SetLevel(log.FatalLevel)
+	bytes, _ := ioutil.ReadFile("../resources/tests/adexp.txt")
+
+	const C = 5000
+	inputs := make([][]byte, C)
+	for i := range inputs {
+		inputs[i] = make([]byte, len(bytes))
+		copy(inputs[i], bytes)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		parseMessages(inputs)
+	}
+}
+
+func parseMessages(inputs [][]byte) []*Message {
+	C := len(inputs)
+	messages := make([]*Message, C)
+
+	// Sequential
+	//
+	// for j := range inputs {
+	// 	messages[j], _ = parseAdexpMessage(inputs[j])
+	// }
+
+	// Concurrent
+	//
+	// var wg sync.WaitGroup
+	// wg.Add(C)
+	// for j := range inputs {
+	// 	j := j
+	// 	input := inputs[j]
+	// 	go func() {
+	// 		messages[j], _ = parseAdexpMessage(input)
+	// 		wg.Done()
+	// 	}()
+	// }
+	// wg.Wait()
+
+	// Concurrent batches: W workers of M messages
+	//
+	const W = 20
+	if C%W != 0 {
+		panic(fmt.Sprintf("Can't uniformely dispatch %d to %d workers", C, W))
+	}
+	M := C / W
+	var wg sync.WaitGroup
+	wg.Add(W)
+	for w := 0; w < W; w++ {
+		hi, lo := w*M, (w+1)*M
+		subinputs := inputs[hi:lo]
+		submsg := messages[hi:lo]
+		go func() {
+			for j, input := range subinputs {
+				submsg[j], _ = parseAdexpMessage(input)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	return messages
 }
