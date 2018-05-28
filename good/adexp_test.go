@@ -150,7 +150,7 @@ func parseMessages(inputs [][]byte) []Message {
 	// wg.Wait()
 
 	// Concurrent batches: W workers of M messages
-	const W = 20
+	const W = 100
 	if C%W != 0 {
 		panic(fmt.Sprintf("Can't uniformely dispatch %d to %d workers", C, W))
 	}
